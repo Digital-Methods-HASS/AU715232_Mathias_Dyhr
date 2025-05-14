@@ -2,7 +2,10 @@
 title: "Danish Kings Week 10"
 author: "Mathias Dyhr Pedersen"
 date: "2025-03-05"
-output: html_document
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
