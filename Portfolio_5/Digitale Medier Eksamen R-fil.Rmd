@@ -1,0 +1,235 @@
+---
+title: 'Jernbanens udbredelse i Danmark statistisk analyse'
+date: 'created on 18 Maj 2025 af Mathias Dyhr Pedersen`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+#load data
+```{r echo=TRUE}
+jernbanedata <- read.csv2("Data/jernbanedata_danmark.csv", na = "NULL", fileEncoding = "latin1")
+view(jernbanedata)
+```
+#datagennemgang
+```{r, echo=TRUE}
+head(jernbanedata)
+tail(jernbanedata)
+glimpse(jernbanedata)
+str(jernbanedata)
+```
+
+#Jeg benytter subsetting af min dataanlyse af jernbanen
+```{r, echo=TRUE}
+jernbanens_udbygning_i_alt <- sum(jernbanedata$jernbanens_udbygning_i_km, na.rm = TRUE)
+jernbanens_udbygning_i_alt
+jernbanens_nedlæggelse_i_alt <- sum(jernbanedata$nedlæggelse_af_jernbane_i_km, na.rm = TRUE)
+jernbanens_nedlæggelse_i_alt
+jernbanen_km_i_alt <- jernbanens_udbygning_i_alt - jernbanens_nedlæggelse_i_alt
+jernbanen_km_i_alt
+```
+
+```{r, echo=TRUE}
+jernbane_størst_udbygning <- jernbanedata %>% 
+  filter(jernbanens_udbygning_i_km == max(jernbanens_udbygning_i_km, na.rm = TRUE)) %>% 
+  select(år, jernbanens_udbygning_i_km)
+jernbane_størst_udbygning
+```
+
+```{r, echo=TRUE}
+jernbane_udbygning_gennemsnit <- jernbanedata %>% 
+  summarise(jernbane_udbygning_gennemsnit = mean(jernbanens_udbygning_i_km, na.rm = TRUE))
+jernbane_udbygning_gennemsnit
+```
+
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>%
+  mutate(cumsum_jernbane_udbygning = cumsum(replace_na(jernbanens_udbygning_i_km, 0)))
+view(jernbanedata)
+```
+
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>%
+  mutate(udbygning_procent = (cumsum_jernbane_udbygning - lag(cumsum_jernbane_udbygning)) / lag(cumsum_jernbane_udbygning) * 100)
+view(jernbanedata)
+```
+
+#Jeg laver forskellige grafer ved hjælp af ggplotting af jernbanedata
+```{r, echo=TRUE}
+ggplot(jernbanedata, aes(x = år, y = jernbanens_udbygning_i_km)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Udbygning af jernbanen gennem perioden 1834-1930") +
+  theme_minimal()
+```
+
+```{r, echo=TRUE}
+ggplot(jernbanedata, aes(x = år, y = cumsum_jernbane_udbygning)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Udbygning af jernbanen gennem perioden 1834-1930 i alt") +
+  theme_minimal()
+```
+
+```{r, echo=TRUE}
+ggplot(jernbanedata, aes(x = år, y = udbygning_procent)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Udbygning af jernbanen gennem perioden 1834-1930 i procent") +
+  theme_minimal()
+```
+
+#subsetting dataanlyse af befolkningstallet
+#Jeg finder frem til stigningen i befolkningstallet
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>% 
+  mutate(befolkningstal_by_sammenlagt = befolkningstal_i_københavn + befolkningstal_i_provinsbyer)
+view(jernbanedata)
+```
+
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>% 
+  mutate(stigning_befolkningstal_by_sammmenlagt = befolkningstal_by_sammenlagt - lag(befolkningstal_by_sammenlagt))
+head(jernbanedata)
+```
+
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>% 
+  mutate(stigning_befolkningstal = befolkningstal - lag(befolkningstal))
+head(jernbanedata)
+```
+
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>% 
+  mutate(stigning_befolkningstal_københavn = befolkningstal_i_københavn - lag(befolkningstal_i_københavn))
+head(jernbanedata)
+```
+
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>% 
+  mutate(stigning_befolkningstal_provinsbyer = befolkningstal_i_provinsbyer - lag(befolkningstal_i_provinsbyer))
+head(jernbanedata)
+```
+
+#Jeg finder frem til den største stigning i befolkningstal
+```{r, echo=TRUE}
+befolkning_størst_stigning <- jernbanedata %>% 
+  filter(stigning_befolkningstal == max(stigning_befolkningstal, na.rm = TRUE)) %>% 
+  select(år, stigning_befolkningstal)
+befolkning_størst_stigning
+```
+
+```{r, echo=TRUE}
+befolkning_københavn_størst_stigning <- jernbanedata %>% 
+  filter(stigning_befolkningstal_københavn == max(stigning_befolkningstal_københavn, na.rm = TRUE)) %>% 
+  select(år, stigning_befolkningstal_københavn)
+befolkning_københavn_størst_stigning
+```
+
+```{r, echo=TRUE}
+befolkning_provinsbyer_størst_stigning <- jernbanedata %>% 
+  filter(stigning_befolkningstal_provinsbyer == max(stigning_befolkningstal_provinsbyer, na.rm = TRUE)) %>% 
+  select(år, stigning_befolkningstal_provinsbyer)
+befolkning_provinsbyer_størst_stigning
+```
+
+```{r, echo=TRUE}
+befolkning_by_sammenlagt_størst_stigning <- jernbanedata %>% 
+  filter(stigning_befolkningstal_by_sammmenlagt == max(stigning_befolkningstal_by_sammmenlagt, na.rm = TRUE)) %>% 
+  select(år, stigning_befolkningstal_by_sammmenlagt)
+befolkning_by_sammenlagt_størst_stigning
+```
+
+#Jeg finder frem til gennemsnittet
+```{r, echo=TRUE}
+befolkning_stigning_gennemsnit <- jernbanedata %>% 
+  summarise(befolkning_stigning_gennemsnit = mean(stigning_befolkningstal, na.rm = TRUE))
+befolkning_stigning_gennemsnit
+```
+
+```{r, echo=TRUE}
+befolkning_københavn_stigning_gennemsnit <- jernbanedata %>% 
+  summarise(befolkning_stigning_københavn_gennemsnit = mean(stigning_befolkningstal_københavn, na.rm = TRUE))
+befolkning_københavn_stigning_gennemsnit
+```
+
+```{r, echo=TRUE}
+befolkning_provinsbyer_stigning_gennemsnit <- jernbanedata %>% 
+  summarise(befolkning_provinsbyer_stigning_gennemsnit = mean(stigning_befolkningstal_provinsbyer, na.rm = TRUE))
+befolkning_provinsbyer_stigning_gennemsnit
+```
+
+```{r, echo=TRUE}
+befolkning_by_sammenlagt_gennemsnit <- jernbanedata %>% 
+  summarise(befolkning_by_sammenlagt_gennemsnit = mean(stigning_befolkningstal_by_sammmenlagt, na.rm = TRUE))
+befolkning_by_sammenlagt_gennemsnit
+```
+
+#Jeg finder ud af hvor stor en procentdel af befolkningen, der bor i byerne
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>% 
+  mutate(befolkning_stigning_procent = ((befolkningstal - lag(befolkningstal)) / lag(befolkningstal))*100)
+view(jernbanedata)
+```
+
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>% 
+  mutate(befolkning_by_stigning_procent = ((befolkningstal_by_sammenlagt - lag(befolkningstal_by_sammenlagt)) / lag(befolkningstal_by_sammenlagt)) * 100)
+view(jernbanedata)
+```
+
+```{r, echo=TRUE}
+jernbanedata <- jernbanedata %>% 
+  mutate(urbaniseringsgrad = (befolkningstal_by_sammenlagt / befolkningstal)*100)
+view(jernbanedata)
+```
+
+#Jeg laver forskellige omkring grafer befolkningstallet ved hjælp af ggplotting af jernbanedata
+```{r, echo=TRUE}
+ggplot(jernbanedata, aes(x = år, y = befolkningstal)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Befolkningstallets udvikling gennem perioden 1834-1930") +
+  theme_minimal()
+```
+
+```{r, echo=TRUE}
+ggplot(jernbanedata, aes(x = år, y = befolkningstal_by_sammenlagt)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Bybefolkningens udvikling i perioden 1834 til 1930") +
+  theme_minimal()
+```
+
+```{r, echo=TRUE}
+ggplot(jernbanedata, aes(x = år, y = urbaniseringsgrad)) +
+  geom_line(color = "blue") +
+  geom_point(color = "red") +
+  labs(title = "Urbaniseringsgraden i perioden 1834 til 1930") +
+  theme_minimal()
+```
+
+#Jeg laver forskellige sammenlignende grafer med befolkningstallet og jernbanens udvikling ved hjælp af ggplotting af jernbanedata
+```{r, echo=TRUE}
+ggplot(jernbanedata, aes(x = år)) +
+  geom_line(aes(y = befolkning_stigning_procent, color = "befolkningsvækst_i_alt"))+
+  geom_line(aes(y = befolkning_by_stigning_procent, color = "befolkningsvækst_i_byer"))+
+  geom_line(aes(y = udbygning_procent, color = "Jernbanens udbygning"))+
+  labs(title = "Befolkningsvækst og jernbanens udvidelse (1834–1930)",
+       y = "Procentvis stigning",
+       x = "År") +
+  theme_minimal()
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
